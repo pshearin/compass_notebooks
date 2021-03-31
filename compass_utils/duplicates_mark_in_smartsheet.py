@@ -140,9 +140,9 @@ def evaluate_row_and_build_updates(source_row):
     if request_value in update_list:
         
     # Build new cell value
-        new_cell = smartsheet_client.models.Cell()
-        new_cell.column_id = column_map["Forecast Stage"]
-        new_cell.value = '7 - Duplicate Request'
+        new_cell = smartsheet_client.models.Cell()  # instantiate a new cell entity
+        new_cell.column_id = column_map["Forecast Stage"]   # set the properties of the new cell, in this case, the column ID returned from the dict
+        new_cell.value = '7 - Duplicate Request'       # set the value of the new cell
 
     # Build the row to update
         new_row = smartsheet_client.models.Row()

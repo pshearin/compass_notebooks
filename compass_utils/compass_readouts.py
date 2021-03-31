@@ -5,7 +5,7 @@ excel_file_path_sfdc_version = r'C:\Users\phsheari\Documents\SFDC Data\PIPELINE 
 
 df = pd.read_pickle(excel_file_path_sfdc_version)
 
-readouts = df[['Request ID','Customer Name','Date Readout Done']]
+readouts = df[['Request ID','Date Readout Done']] #, 'BDM Assigned','Compass Campaign Name', 'Campaign Type', 'Deal ID', 'IndexID']]
 
 #A function to stringify the various possible elements in the dataframe with a float data-type
 def stringify_element(m):
@@ -56,7 +56,7 @@ guidf['GUID'] = guidf['GUID'].astype(int)
 readouts = pd.merge(guidf, readouts, on='Request ID').dropna()
 
 def get_readout_dates(input_guid: int):
-    return readouts.loc[readouts['GUID']==input_guid,'Date Readout Done'].values[0]
+    return readouts.loc[(readouts['GUID']==input_guid) & (readouts['Date Readout Done'].notnull()),'Date Readout Done'].values[0]
 
 
 def get_readout_dataframe():

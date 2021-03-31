@@ -18,12 +18,12 @@ _reference_start_date = dt.date(1999,8,1)  #the start date of fiscal year 2000
 #_reference_year = 2000
 _reference_year_day_count = 364
 _special_years_day_count = 371
-_how_many_years_to_track = 2
+_how_many_years_to_track = 5
 _special_year_startyear = 2004
 
 _special_year_endyear = current_year + _how_many_years_to_track
 
-_special_years = list(range(_special_year_startyear, _special_year_endyear, 6))
+_special_years = [2004,2010,2016,2021,2027]
 
 _years_list = list(range(2000,current_year + _how_many_years_to_track + 1,1))
 #_day_count = None
@@ -135,9 +135,9 @@ s_year_rkd_monthOfQtr = RangeKeyDict({
     (92, 120): 1,
     (120, 148): 2,
     (148, 183): 3,
-    (183, 218): 1,
-    (218, 246): 2,
-    (246, 281): 3,
+    (183, 218): 1,     # 5 weeks
+    (218, 246): 2,     # 4 weeks
+    (246, 281): 3,     # 5 weeks
     (281, 309): 1,
     (309, 337): 2,
     (337, 372): 3,      
@@ -407,20 +407,20 @@ s_year_rkd_weekOfQtr = RangeKeyDict({
     (253, 260): 11, 
     (260, 267): 12,
     (267, 274): 13, 
-    (274, 281): 1,
-    (281, 288): 2, 
-    (288, 295): 3,
-    (295, 302): 4, 
-    (302, 309): 5,
-    (309, 316): 6, 
-    (316, 323): 7,
-    (323, 330): 8, 
-    (330, 337): 9,
-    (337, 344): 10, 
-    (344, 351): 11,
-    (351, 358): 12, 
-    (358, 365): 13,
-    (365, 372): 14,
+    (274, 281): 14,
+    (281, 288): 1, 
+    (288, 295): 2,
+    (295, 302): 3, 
+    (302, 309): 4,
+    (309, 316): 5, 
+    (316, 323): 6,
+    (323, 330): 7, 
+    (330, 337): 8,
+    (337, 344): 9, 
+    (344, 351): 10,
+    (351, 358): 11, 
+    (358, 365): 12,
+    (365, 372): 13,
     })
 
 
@@ -521,11 +521,11 @@ s_year_rkd_weekOfFiscalMonth = RangeKeyDict({
     (190, 197): 2,
     (197, 204): 3, 
     (204, 211): 4,
-    (211, 218): 1, 
-    (218, 225): 2,
-    (225, 232): 3, 
-    (232, 239): 4,
-    (239, 246): 5, 
+    (211, 218): 5, 
+    (218, 225): 1,
+    (225, 232): 2, 
+    (232, 239): 3,
+    (239, 246): 4, 
     (246, 253): 1,
     (253, 260): 2, 
     (260, 267): 3,
@@ -558,7 +558,7 @@ calendar_df['week_of_fiscalmonth'] = calendar_df.apply(get_weekOfFiscalMonth, ax
 #####################################################################################
 
 # Install FINBI fiscal values for lookup ('fiscal year','fiscal quarter id','fiscal period id','fiscal week id')
-# Since fiscal year, and "FINBI fiscal year" is teh same thing, we'll leave it at just "fiscal year"
+# Since fiscal year, and "FINBI fiscal year" is the same thing, we'll leave it as just "fiscal year"
 #
 #
 
@@ -671,7 +671,7 @@ def get_fiscal_month(input_a_date):
 
 def get_fiscal_week_of_fiscal_month(input_a_date):
     if pd.isnull(input_a_date):
-        print("Input date is NULL. Please check your input date.")
+        #print("Input date is NULL. Please check your input date.")
         return pd.NA
     else:
         strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
@@ -685,6 +685,46 @@ def get_fiscal_week_of_fiscal_month(input_a_date):
                 return str(checkweek)
             except IndexError:
                 return pd.NA
+
+
+def get_fiscal_week_of_fiscal_quarter(input_a_date):
+    if pd.isnull(input_a_date):
+        #print("Input date is NULL. Please check your input date.")
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried is greater than the current maximum date: {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkweek = calendar_df.loc[calendar_df.date == strdate]['week_of_fiscalquarter'].values[0]
+                return str(checkweek)
+            except IndexError:
+                return pd.NA
+
+
+
+def get_fiscal_week_of_fiscal_year(input_a_date):
+    if pd.isnull(input_a_date):
+        #print("Input date is NULL. Please check your input date.")
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried is greater than the current maximum date: {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkweek = calendar_df.loc[calendar_df.date == strdate]['week_of_fiscalyear'].values[0]
+                return str(checkweek)
+            except IndexError:
+                return pd.NA
+
+
+
 
 def make_reporting_week(df_finbi_fiscal_week_id):
     return calendar_df.loc[calendar_df['finbi_fiscal_week_id']==df_finbi_fiscal_week_id, 'week_of_fiscalquarter'].values[0]

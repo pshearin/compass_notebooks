@@ -67,7 +67,7 @@ class CompassSmartsheet:
         self.sheets_response = self.smartsheet_client.Sheets.list_sheets(include_all=True)
         self.sheets_response_status = self.sheets_response.request_response.status_code
 
-        # The Bookings sheet portion 
+        ''' # The Bookings sheet portion 
         self.bookings_sheet_id = None # to hold the "Compass Bookings" sheet name/id
         for sheet in self.sheets_response.data:
             if sheet.name == "Compass Bookings":
@@ -111,6 +111,9 @@ class CompassSmartsheet:
         self.book_dft['Date Completed'] = pd.to_datetime(self.book_dft['Date Completed']).dt.date
         self.book_dft['Lvl2 (Region)'] = self.book_dft['Lvl2 (Region)'].apply(self.get_right_theater)
 
+        self.book_dft['Request ID'] = self.book_dft['Request ID'].apply(self.convert_nan_to_int_to_str)
+        self.book_dft['Previous Request ID'] = self.book_dft['Previous Request ID'].apply(self.convert_nan_to_int_to_str)
+
         # Clean up and standardize the Sales Territory Level Fields
         self.book_dft['Lvl1'] = self.book_dft['Lvl1'].str.replace('__','')
         self.book_dft['Lvl1'] = self.book_dft['Lvl1'].str.upper()
@@ -129,14 +132,18 @@ class CompassSmartsheet:
         self.book_dft['Deliverability'] = 'Good'
         self.book_dft['InsufficientDataCount'] = 0
         self.book_dft['Last Update'] = self.last_updated
-#############################################################################################
+######## '''#####################################################################################
         # The report sheets portion
         self.list_of_sheets_in_report = ["Compass Request Tracker - FY19Q4",
                                          "Compass Request Tracker - FY20Q1",
                                          "Compass Request Tracker - FY20Q2",
                                          "Compass Request Tracker - FY20Q3",
                                          "Compass Request Tracker - FY20Q4",
-                                         "Compass Request Tracker"
+                                         "Compass Request Tracker - FY21Q1",
+                                         "Compass Request Tracker - FY21Q2",
+                                         "Compass Request Tracker",
+                                         "Compass Request Tracker - Targeting Campaign",
+                                         "Compass Request Tracker - Partners"
                                          ]
 
         self.sheets_in_report_dict = {}
@@ -191,8 +198,9 @@ class CompassSmartsheet:
         self.data_dft['Date Completed'] = pd.to_datetime(self.data_dft['Date Completed']).dt.date
         
 
-
         self.data_dft['Lvl2 (Region)'] = self.data_dft['Lvl2 (Region)'].apply(self.get_right_theater)
+        self.data_dft['Request ID'] = self.data_dft['Request ID'].apply(self.convert_nan_to_int_to_str)
+        self.data_dft['Previous Request ID'] = self.data_dft['Previous Request ID'].apply(self.convert_nan_to_int_to_str)
 
         # Prepare the previously marked Duplicate Deal ID field by resetting to NULL
         self.data_dft.loc[self.data_dft['Forecast Stage']=='7 - Duplicate Request','Forecast Stage']=pd.NA
@@ -229,14 +237,14 @@ class CompassSmartsheet:
         self.data_dft['Target Fiscal Quarter'] = self.data_dft['Target Fiscal Quarter'].apply(self.convert_nan_to_int_to_str)
         self.data_dft['Target Fiscal Month'] = self.data_dft['Target Fiscal Month'].apply(self.convert_nan_to_int_to_str)
 
-        self.data_dft['FINBI Booking'] = pd.NA
+        #self.data_dft['FINBI Booking'] = pd.NA
         #self.data_dft['FINBI Booking'] = self.data_dft['FINBI Booking'].astype(float)
-        self.data_dft['FINBI Fiscal WeekID'] = pd.NA
-        self.data_dft['FINBI Fiscal WeekID'] = self.data_dft['FINBI Fiscal WeekID'].astype(str)
+        #self.data_dft['FINBI Fiscal WeekID'] = pd.NA
+        #self.data_dft['FINBI Fiscal WeekID'] = self.data_dft['FINBI Fiscal WeekID'].astype(str)
 
 
-        self.data_dft['Deliverability'] = self.data_dft.apply(lambda x: self.set_deliverability(x['Tableau Project Name'], x['Tableau Project Name 1.0']), axis=1)
-        self.data_dft['InsufficientDataCount'] = self.data_dft.apply(lambda x: self.set_deliverability_count(x['Tableau Project Name'], x['Tableau Project Name 1.0']), axis=1)
+        self.data_dft['Deliverability'] = self.data_dft.apply(lambda x: self.set_deliverability(x['COMPASS URL'], x['COMPASS URL 1.0']), axis=1)
+        self.data_dft['InsufficientDataCount'] = self.data_dft.apply(lambda x: self.set_deliverability_count(x['COMPASS URL'], x['COMPASS URL 1.0']), axis=1)
         self.data_dft['Last Update'] = self.last_updated
 
     def get_sheet_id_from_sheets(self, sheet_name):
@@ -290,18 +298,52 @@ class CompassSmartsheet:
             return 'AM'
 
     def set_deliverability(self, tab_project_name_zed, tab_project_name_one):
-        projectfieldzed = str(tab_project_name_zed)
-        projectfieldone = str(tab_project_name_one)
-        if projectfieldzed[:9].lower() == 'thank you' or projectfieldzed[:13].lower() == 'compass - 717' or projectfieldone[:9].lower() == 'thank you':
+        projectfieldzed = str(tab_project_name_zed).strip()
+        projectfieldone = str(tab_project_name_one).strip()
+        z = None
+        if pd.isnull(projectfieldzed) and pd.isnull(projectfieldone):
             return "Insufficient Data"
+
+        elif pd.notnull(projectfieldzed) and pd.isnull(projectfieldone):
+            z = projectfieldzed
+
+        elif pd.isnull(projectfieldzed) and pd.notnull(projectfieldone):
+            z = projectfieldone
+        
+        elif pd.notnull(projectfieldzed) and pd.notnull(projectfieldone):
+            z = projectfieldone
+
+        #else:
+        #    z = "Insufficient Data"
+        
+        if pd.isnull(z) or z == None or z.lower().startswith('thank you') or z.lower().startswith('compass - ') or z.endswith('The COMPASS Team”.') or z.lower()=='n/a':
+            return "Insufficient Data" 
+
         else:
             return "Good"
 
     def set_deliverability_count(self, tab_project_name_zed, tab_project_name_one):
-        projectfieldzed = str(tab_project_name_zed)
-        projectfieldone = str(tab_project_name_one)
-        if projectfieldzed[:9].lower() == 'thank you' or projectfieldzed[:13].lower() == 'compass - 717' or projectfieldone[:9].lower() == 'thank you':
+        projectfieldzed = str(tab_project_name_zed).strip()
+        projectfieldone = str(tab_project_name_one).strip()
+        z = None
+        if pd.isnull(projectfieldzed) and pd.isnull(projectfieldone):
             return 1
+
+        elif pd.notnull(projectfieldzed) and pd.isnull(projectfieldone):
+            z = projectfieldzed
+
+        elif pd.isnull(projectfieldzed) and pd.notnull(projectfieldone):
+            z = projectfieldone
+        
+        elif pd.notnull(projectfieldzed) and pd.notnull(projectfieldone):
+            z = projectfieldone
+
+        #else:
+        #    z = "Insufficient Data"
+        
+        if pd.isnull(z) or z == None or  z.lower().startswith('thank you') or z.lower().startswith('compass - ') or z.endswith('The COMPASS Team”.') or z.lower()=='n/a':
+            return 1 
+
         else:
             return 0
 
