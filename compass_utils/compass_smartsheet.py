@@ -243,8 +243,8 @@ class CompassSmartsheet:
         #self.data_dft['FINBI Fiscal WeekID'] = self.data_dft['FINBI Fiscal WeekID'].astype(str)
 
 
-        self.data_dft['Deliverability'] = self.data_dft.apply(lambda x: self.set_deliverability(x['COMPASS URL'], x['COMPASS URL 1.0']), axis=1)
-        self.data_dft['InsufficientDataCount'] = self.data_dft.apply(lambda x: self.set_deliverability_count(x['COMPASS URL'], x['COMPASS URL 1.0']), axis=1)
+        self.data_dft['Deliverability'] = self.data_dft.apply(lambda x: self.set_deliverability(x['COMPASS URL'], x['COMPASS URL 1.0'], x['Request Type']), axis=1)
+        self.data_dft['InsufficientDataCount'] = self.data_dft.apply(lambda x: self.set_deliverability_count(x['COMPASS URL'], x['COMPASS URL 1.0'], x['Request Type']), axis=1)
         self.data_dft['Last Update'] = self.last_updated
 
     def get_sheet_id_from_sheets(self, sheet_name):
@@ -297,11 +297,11 @@ class CompassSmartsheet:
         else:
             return 'AM'
 
-    def set_deliverability(self, tab_project_name_zed, tab_project_name_one):
+    def set_deliverability(self, tab_project_name_zed, tab_project_name_one, request_type):
         projectfieldzed = str(tab_project_name_zed).strip()
         projectfieldone = str(tab_project_name_one).strip()
         z = None
-        if pd.isnull(projectfieldzed) and pd.isnull(projectfieldone):
+        if (pd.isnull(projectfieldzed) and pd.isnull(projectfieldone)) or pd.isnull(request_type) or str(request_type).lower() == 'no report':
             return "Insufficient Data"
 
         elif pd.notnull(projectfieldzed) and pd.isnull(projectfieldone):
@@ -316,17 +316,17 @@ class CompassSmartsheet:
         #else:
         #    z = "Insufficient Data"
         
-        if pd.isnull(z) or z == None or z.lower().startswith('thank you') or z.lower().startswith('compass - ') or z.endswith('The COMPASS Team”.') or z.lower()=='n/a':
+        if pd.isnull(z) or z == None or z.lower().startswith('thank you') or z.lower().startswith('compass - ') or z.endswith('The COMPASS Team”.') or z.lower()=='n/a'  or pd.isnull(request_type) or str(request_type).lower() == 'no report':
             return "Insufficient Data" 
 
         else:
             return "Good"
 
-    def set_deliverability_count(self, tab_project_name_zed, tab_project_name_one):
+    def set_deliverability_count(self, tab_project_name_zed, tab_project_name_one, request_type):
         projectfieldzed = str(tab_project_name_zed).strip()
         projectfieldone = str(tab_project_name_one).strip()
         z = None
-        if pd.isnull(projectfieldzed) and pd.isnull(projectfieldone):
+        if (pd.isnull(projectfieldzed) and pd.isnull(projectfieldone)) or pd.isnull(request_type) or str(request_type).lower() == 'no report':
             return 1
 
         elif pd.notnull(projectfieldzed) and pd.isnull(projectfieldone):
@@ -341,7 +341,7 @@ class CompassSmartsheet:
         #else:
         #    z = "Insufficient Data"
         
-        if pd.isnull(z) or z == None or  z.lower().startswith('thank you') or z.lower().startswith('compass - ') or z.endswith('The COMPASS Team”.') or z.lower()=='n/a':
+        if pd.isnull(z) or z == None or  z.lower().startswith('thank you') or z.lower().startswith('compass - ') or z.endswith('The COMPASS Team”.') or z.lower()=='n/a' or pd.isnull(request_type) or str(request_type).lower() == 'no report':
             return 1 
 
         else:

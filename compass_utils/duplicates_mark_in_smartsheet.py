@@ -35,10 +35,10 @@ def get_sheet_id_from_sheets(sheet_name):
             sheet_id = sheet.id
             return sheet_id
         
-    if not sheet_id:
-        errmsg = f"Cannot find the sheet from this sheet_name: {sheet_name} \n"
-        print(errmsg)
-        raise Exception(errmsg)
+        if not sheet.id:
+            errmsg = f"Cannot find the sheet from this sheet_name: {sheet_name} \n"
+            print(errmsg)
+            raise Exception(errmsg)
 
 
 sheet_id = get_sheet_id_from_sheets(sheet_name)
@@ -83,7 +83,7 @@ data_dft.reset_index(drop=True, inplace=True)  # reset the index to a 0-based en
 
 forecast_stage_column =  column_map['Forecast Stage']
 
-# Now bring in the Compass tracker excel export which ha determined the rows with duplicate deal-id's
+# Now bring in the Compass tracker excel export which has determined the rows with duplicate deal-id's
 # we have to identify them so that we do not double-count bookings or pipeline values from SFDC
 
 print("Reading in the Compass Tracker Data from the Excel export! \n")

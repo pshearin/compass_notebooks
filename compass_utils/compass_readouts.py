@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd 
+import datetime as dt
 
 excel_file_path_sfdc_version = r'C:\Users\phsheari\Documents\SFDC Data\PIPELINE UPDATE\SFDC_Trackerfile.pkl'
 
 df = pd.read_pickle(excel_file_path_sfdc_version)
 
-readouts = df[['Request ID','Date Readout Done']] #, 'BDM Assigned','Compass Campaign Name', 'Campaign Type', 'Deal ID', 'IndexID']]
+step_one = df[['Request ID','Readout_Date']] 
+step_one['Readout_Date'] = step_one['Readout_Date'].apply(lambda x: pd.to_datetime(x))
 
 #A function to stringify the various possible elements in the dataframe with a float data-type
 def stringify_element(m):
@@ -36,7 +38,7 @@ guidf = guidf.explode('GUID')
 guidf.reset_index(inplace=True)
 guidf.dropna(inplace=True)
 
-guidlist = []
+""" guidlist = []
 for i,guid in guidf['GUID'].items():
     if isinstance(guid,list):
         for e in guid:
@@ -44,7 +46,7 @@ for i,guid in guidf['GUID'].items():
                 if e.isdigit():
                     guidlist.append((i,e))
     else:
-        guidlist.append((i,guid))
+        guidlist.append((i,guid)) """
 
 guidf['BADGUID'] = guidf['GUID'].str.isalpha()
 guidf['BADLENGTH'] = guidf['GUID'].apply(lambda x: len(x)> 10)
@@ -53,10 +55,11 @@ guidf.drop(guidf.loc[guidf['BADLENGTH']==True].index, inplace=True)
 guidf.drop(guidf.loc[~(guidf['GUID'].str.isdigit())].index, inplace=True)
 guidf.drop(columns = ['BADGUID','BADLENGTH'], inplace=True)
 guidf['GUID'] = guidf['GUID'].astype(int)
-readouts = pd.merge(guidf, readouts, on='Request ID').dropna()
+
+readouts = pd.merge(guidf, step_one, on='Request ID').dropna()
 
 def get_readout_dates(input_guid: int):
-    return readouts.loc[(readouts['GUID']==input_guid) & (readouts['Date Readout Done'].notnull()),'Date Readout Done'].values[0]
+    return readouts.loc[(readouts['GUID']==input_guid) & (readouts['Readout_Date'].notnull()),'Readout_Date'].values[0]
 
 
 def get_readout_dataframe():

@@ -2,17 +2,12 @@ from dateutil.parser import parse
 import datetime as dt
 import numpy as np
 import pandas as pd
+import special_years
 from range_key_dict import RangeKeyDict
 
 starttime = dt.datetime.now()
 
 current_year = int(starttime.year)
-
-#class CiscoFiscalPeriod:
-
-###  Note: Cisco's fiscal year is 364 days normally. Every 6 years, their cycle adds an additional week, and their fiscal year becomes 371 days long.
-###  The list named "special_years" below, lists the years which were lengthened from 364 days to 371 days.
-### SETUP: ###
 
 _reference_start_date = dt.date(1999,8,1)  #the start date of fiscal year 2000
 #_reference_year = 2000
@@ -23,7 +18,7 @@ _special_year_startyear = 2004
 
 _special_year_endyear = current_year + _how_many_years_to_track
 
-_special_years = [2004,2010,2016,2021,2027]
+_special_years = special_years.get_special_years() #[2004,2010,2016,2021,2027,2032,2038,2044,2049]
 
 _years_list = list(range(2000,current_year + _how_many_years_to_track + 1,1))
 #_day_count = None
@@ -600,6 +595,16 @@ calendar_df['finbi_fiscal_week_id'] = calendar_df.apply(lambda x: make_finbi_fis
 calendar_df['report_week_of_quarter'] = calendar_df['week_of_fiscalquarter']
 
 ##########################################################################################
+## Make DICTs for EACH of the FISCAL PERIODS you want to report with
+
+FY = dict(zip(calendar_df.date, calendar_df.fiscalyear)) # Fiscal Year dict
+FQ = dict(zip(calendar_df.date, calendar_df.fiscalquarter))  #Fiscal Quarter dict
+FMOFY = dict(zip(calendar_df.date, calendar_df.month_of_fiscalyear)) #Fiscal Month of Fiscal Year dict
+FWOFY = dict(zip(calendar_df.date, calendar_df.week_of_fiscalyear)) #Fiscal Week of Fiscal Year dict
+FWOFQ = dict(zip(calendar_df.date, calendar_df.week_of_fiscalquarter)) #Fiscal Week of Fiscal Quarter dict
+FWOFM = dict(zip(calendar_df.date, calendar_df.week_of_fiscalmonth)) #Fiscal Week of Fiscal Month dict
+RWOFQ = dict(zip(calendar_df.finbi_fiscal_week_id, calendar_df.report_week_of_quarter)) #Report Week of Fiscal Quarter
+
 
 def date_to_index(datestr):
     try:
@@ -614,8 +619,10 @@ def date_to_index(datestr):
 def get_calendar_dataframe():
     return calendar_df
 
+#########################################################################################
+## GET AND RETURN THE FISCAL YEAR
 
-def get_fiscal_year(input_a_date):
+''' def get_fiscal_year(input_a_date):
     if pd.isnull(input_a_date):
         return pd.NA
     else:
@@ -629,9 +636,28 @@ def get_fiscal_year(input_a_date):
                 checkyear = calendar_df.loc[calendar_df.date == strdate]['fiscalyear'].values[0]
                 return str(checkyear)
             except IndexError:
+                return pd.NA '''
+
+def get_fiscal_year(input_a_date):
+    if pd.isnull(input_a_date):
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried is greater than the current maximum date: {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkyear = FY.get(strdate)
+                return str(checkyear)
+            except IndexError:
                 return pd.NA
 
-def get_fiscal_quarter(input_a_date):
+#########################################################################################
+## GET AND RETURN THE FISCAL QUARTER
+
+''' def get_fiscal_quarter(input_a_date):
     if pd.isnull(input_a_date):
         return pd.NA
     else:
@@ -645,10 +671,29 @@ def get_fiscal_quarter(input_a_date):
                 checkquarter = calendar_df.loc[calendar_df.date == strdate]['fiscalquarter'].values[0]
                 return str(checkquarter)
             except IndexError:
+                return pd.NA '''
+
+def get_fiscal_quarter(input_a_date):
+    if pd.isnull(input_a_date):
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried is greater than the current maximum date: {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkquarter = FQ.get(strdate)
+                return str(checkquarter)
+            except IndexError:
                 return pd.NA
 
 
-def get_fiscal_month(input_a_date):
+############################################################################################
+## GET AND RETURN THE FISCAL MONTH OF THE FISCAL YEAR
+
+''' def get_fiscal_month(input_a_date):
     if pd.isnull(input_a_date):
         #print("Input date is NULL. Please check your input date.")
         return pd.NA
@@ -666,10 +711,35 @@ def get_fiscal_month(input_a_date):
                 else:
                     return str(checkmonth)
             except IndexError:
+                return pd.NA '''
+
+
+def get_fiscal_month(input_a_date):
+    if pd.isnull(input_a_date):
+        #print("Input date is NULL. Please check your input date.")
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried, {thisdate}, is greater than the current maximum date of {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkmonth = FMOFY.get(strdate)
+                if checkmonth < 10:
+                    return "0" + str(checkmonth)
+                else:
+                    return str(checkmonth)
+            except IndexError:
                 return pd.NA
 
 
-def get_fiscal_week_of_fiscal_month(input_a_date):
+###################################################################################################
+## GET AND RETURN THE FISCAL WEEK OF THE FISCAL MONTH
+
+
+''' def get_fiscal_week_of_fiscal_month(input_a_date):
     if pd.isnull(input_a_date):
         #print("Input date is NULL. Please check your input date.")
         return pd.NA
@@ -684,10 +754,29 @@ def get_fiscal_week_of_fiscal_month(input_a_date):
                 checkweek = calendar_df.loc[calendar_df.date == strdate]['week_of_fiscalmonth'].values[0]
                 return str(checkweek)
             except IndexError:
+                return pd.NA '''
+
+def get_fiscal_week_of_fiscal_month(input_a_date):
+    if pd.isnull(input_a_date):
+        #print("Input date is NULL. Please check your input date.")
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried is greater than the current maximum date: {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkweek = FWOFM.get(strdate)
+                return str(checkweek)
+            except IndexError:
                 return pd.NA
 
+######################################################################################################
+##  GET AND RETURN THE FISCAL WEEK OF THE FISCAL QUARTER
 
-def get_fiscal_week_of_fiscal_quarter(input_a_date):
+''' def get_fiscal_week_of_fiscal_quarter(input_a_date):
     if pd.isnull(input_a_date):
         #print("Input date is NULL. Please check your input date.")
         return pd.NA
@@ -703,10 +792,29 @@ def get_fiscal_week_of_fiscal_quarter(input_a_date):
                 return str(checkweek)
             except IndexError:
                 return pd.NA
+ '''
 
+def get_fiscal_week_of_fiscal_quarter(input_a_date):
+    if pd.isnull(input_a_date):
+        #print("Input date is NULL. Please check your input date.")
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried is greater than the current maximum date: {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkweek = FWOFQ.get(strdate)
+                return str(checkweek)
+            except IndexError:
+                return pd.NA
 
+#############################################################################################################
+## GET AND RETURN THE FISCAL WEEK OF THE FISCAL YEAR
 
-def get_fiscal_week_of_fiscal_year(input_a_date):
+''' def get_fiscal_week_of_fiscal_year(input_a_date):
     if pd.isnull(input_a_date):
         #print("Input date is NULL. Please check your input date.")
         return pd.NA
@@ -722,18 +830,42 @@ def get_fiscal_week_of_fiscal_year(input_a_date):
                 return str(checkweek)
             except IndexError:
                 return pd.NA
+ '''
 
+def get_fiscal_week_of_fiscal_year(input_a_date):
+    if pd.isnull(input_a_date):
+        #print("Input date is NULL. Please check your input date.")
+        return pd.NA
+    else:
+        strdate = str(date_to_index(input_a_date))            #dt.datetime.strptime(input_a_date, '%m/%d/%Y')
+        thisdate = dt.date.fromisoformat(strdate)
+        df_maxdate = pd.to_datetime(calendar_df.date.max())
+        if thisdate > df_maxdate:
+            print(f"The date queried is greater than the current maximum date: {df_maxdate}. Please input an earlier date.")
+        else:
+            try:
+                checkweek = FWOFY.get(strdate)
+                return str(checkweek)
+            except IndexError:
+                return pd.NA
 
-
+###########################################################################################################
+## GET AND RETURN THE REPORT WEEK OF THE FISCAL QUARTER
 
 def make_reporting_week(df_finbi_fiscal_week_id):
     return calendar_df.loc[calendar_df['finbi_fiscal_week_id']==df_finbi_fiscal_week_id, 'week_of_fiscalquarter'].values[0]
 
 
+''' def get_reporting_week(df_finbi_fiscal_week_id):
+    return calendar_df.loc[calendar_df['finbi_fiscal_week_id']==df_finbi_fiscal_week_id, 'report_week_of_quarter'].values[0] '''
+
 def get_reporting_week(df_finbi_fiscal_week_id):
-    return calendar_df.loc[calendar_df['finbi_fiscal_week_id']==df_finbi_fiscal_week_id, 'report_week_of_quarter'].values[0]
+    return RWOFQ.get(df_finbi_fiscal_week_id)
+
+
+
+#print(calendar_df.columns)
 
 #print(calendar_df.info())
 #print(get_fiscal_year('8/31/2023'))
 #print(get_fiscal_quarter('8/31/2023'))
-
